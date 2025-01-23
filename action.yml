@@ -53,6 +53,10 @@ inputs:
     description: Whether to leave a sticky comment on the calling PR.
     required: false
     default: "true"
+  wait:
+    description: Whether to wait for the deployment to complete before continuing.
+    required: false
+    default: "true"
 
   custom-url:
     description: Deprecated, use `pages-base-url` instead.
@@ -135,6 +139,20 @@ runs:
         target-folder: ${{ env.preview_file_path }}
         commit-message: Deploy preview for PR ${{ github.event.number }} 🛫
         force: false
+
+    - name: Wait for deployment to complete
+      if: |
+        env.deployment_action == 'deploy' &&
+        env.deployment_status == 'success' &&
+        (inputs.wait == 'true' || inputs.wait == true)
+      uses: noirbizarre/need-checks@main
+      with:
+        token: ${{ inputs.token }}
+        repository: ${{ inputs.deploy-repository }}
+        ref: ${{ inputs.preview-branch }}
+        wait: true
+        wait_interval: 5
+        wait_timeout: 120
 
     - name: Leave a comment after deployment
       if: |
